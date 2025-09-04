@@ -7,4 +7,20 @@ module shift_add_multiplier (
     output logic d_end
 );
 
+    shift_register A (
+
+    );
+
+    shift_register B (
+
+    );
+
+    shift_register Q (
+
+    );
+
+    counter count (
+
+    );
+
 endmodule
