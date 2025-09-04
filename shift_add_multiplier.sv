@@ -9,10 +9,14 @@ module shift_add_multiplier #(parameter N=8) (
 
 logic load, en, c_end, data_out, up_down, cycle;
 
-logic [1:0] a_ctrl, b_ctrl, q_ctrl
-logic [7:0] a_out, b_out, q_out
-logic a_ser_in, a_ser_out, b_ser_in, b_ser_out, q_ser_in, q_ser_out
+logic [1:0] a_ctrl, b_ctrl, q_ctrl;
+logic [7:0] a_out, b_out, q_out;
+logic a_ser_in, a_ser_out, b_ser_in, b_ser_out, q_ser_in, q_ser_out;
 
+logic [7:0] f;
+assign s = 1;
+assign m = 4'b1011;
+logic c_in, a_eq_b, c_out, c_ripple;
 
 shift_register A (
     .clk(clk),
@@ -53,6 +57,12 @@ counter count (
     .data_in(cycle),
     .data_out(data_out),
     .c_end(d_end),
+);
+
+ula op (
+    .a(a),
+    .b(b),
+
 );
 
 endmodule
