@@ -30,16 +30,16 @@ shift_register A (
     .clk(clk),
     .rst(rst),
     .ctrl(a_ctrl),
-    .parallel_in(f),
-    .ser_in(a_ser_in),
-    .parallel_out(a),
+    .parallel_in(a),
+    .ser_in(1'b0),
+    .parallel_out(a_out),
     .ser_out(a_ser_out)
 );
 
 shift_register B (
     .clk(clk),
     .rst(rst),
-    .ctrl(2'b11),
+    .ctrl(b_ctrl),
     .parallel_in(b),
     .ser_in(b_ser_in),
     .parallel_out(b_out),
@@ -51,7 +51,7 @@ shift_register Q (
     .rst(rst),
     .ctrl(q_ctrl),
     .parallel_in(q),
-    .ser_in(a_ser_out),
+    .ser_in(a_out[0]),
     .parallel_out(q_out),
     .ser_out(q_ser_out)
 );
@@ -62,14 +62,14 @@ counter count (
     .load(load_counter),
     .en(en_counter),
     .up_down(1'b0),
-    .data_in(4'b1000),
+    .data_in(4'b0111),
     .data_out(data_out),
     .c_end(c_end)
 );
 
 ula_8_bits operation (
-    .a(a),
-    .b(b),
+    .a(a_out),
+    .b(b_out),
     .s(4'b0001),
     .m(1'b0),
     .f(f),
@@ -88,7 +88,10 @@ end
 
 always_comb begin
     a_ctrl = 2'b00;
+    b_ctrl = 2'b00;
     q_ctrl = 2'b00;
+
+    a = 8'b00000000;
 
     load_counter = 0;
     en_counter = 0;
@@ -100,29 +103,31 @@ always_comb begin
     case(state_reg)
         idle: begin
             a_ctrl = 2'b11;
+            b_ctrl = 2'b11;
             q_ctrl = 2'b11;
             load_counter = 1;
             state_next = verify;
         end
         verify: begin
-            if(c_end != 0) begin
-                if(q_out[0] == 1)
-                    state_next = add;
-                else
-                    state_next = shift;
-            end 
+            if(q_out[0] == 1)
+                state_next = add;
             else
-                state_next = done;
+                state_next = shift; 
         end
         add: begin
             a_ctrl = 2'b11;
+            a = f;
             state_next = shift;
         end
         shift: begin
-            a_ctrl = 2'b10;
-            q_ctrl = 2'b10;
+            a_ctrl = 2'b01;
+            q_ctrl = 2'b01;
             en_counter = 1;
-            state_next = verify;
+
+            if(c_end == 0)
+                state_next = verify;
+            else
+                state_next = done;
         end
         done: begin
             d_end = 1;
@@ -132,5 +137,5 @@ always_comb begin
     endcase
 end
 
-assign result = {a, q_out};
+assign result = {a_out, q_out};
 endmodule
