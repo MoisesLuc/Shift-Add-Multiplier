@@ -8,7 +8,7 @@ module shift_add_multiplier (
 );
 
 // Acumulador A
-logic [7:0] a;
+logic [8:0] a;
 
 // Variáveis para controle do Counter
 logic [3:0] cycle, data_out;
@@ -16,7 +16,8 @@ logic load_counter, en_counter, c_end, up_down;
 
 // Variáveis para controle dos shift registers A, B e Q
 logic [1:0] a_ctrl, b_ctrl, q_ctrl;
-logic [7:0] a_out, b_out, q_out;
+logic [8:0] a_out;
+logic [7:0] b_out, q_out;
 logic a_ser_in, a_ser_out, b_ser_in, b_ser_out, q_ser_out;
 
 // Variáveis de controle para a ULA de 8 BITs
@@ -26,7 +27,7 @@ logic m, s, c_in, a_eq_b, c_out, c_ripple;
 typedef enum {idle, ready, verify, add, shift, done} state_type;
 state_type state_reg, state_next;
 
-shift_register A (
+shift_register #(9) A (
     .clk(clk),
     .rst(rst),
     .ctrl(a_ctrl),
@@ -36,7 +37,7 @@ shift_register A (
     .ser_out(a_ser_out)
 );
 
-shift_register B (
+shift_register #(8) B (
     .clk(clk),
     .rst(rst),
     .ctrl(b_ctrl),
@@ -46,7 +47,7 @@ shift_register B (
     .ser_out(b_ser_out)
 );
 
-shift_register Q (
+shift_register #(8) Q (
     .clk(clk),
     .rst(rst),
     .ctrl(q_ctrl),
@@ -68,7 +69,7 @@ counter count (
 );
 
 ula_8_bits operation (
-    .a(a_out),
+    .a(a_out[7:0]),
     .b(b_out),
     .s(4'b0001),
     .m(1'b0),
@@ -91,7 +92,7 @@ always_comb begin
     b_ctrl = 2'b00;
     q_ctrl = 2'b00;
 
-    a = 8'b00000000;
+    a = 9'b000000000;
 
     load_counter = 0;
     en_counter = 0;
@@ -102,6 +103,10 @@ always_comb begin
 
     case(state_reg)
         idle: begin
+            $display("IDLE");
+            $display("A_OUT: %b", a_out);
+            $display("B_OUT: %b", b_out);
+            $display("Q_OUT: %b", q_out);
             a_ctrl = 2'b11;
             b_ctrl = 2'b11;
             q_ctrl = 2'b11;
@@ -109,17 +114,33 @@ always_comb begin
             state_next = verify;
         end
         verify: begin
+            $display("VERIFY");
+            $display("A_OUT: %b", a_out);
+            $display("B_OUT: %b", b_out);
+            $display("Q_OUT: %b", q_out);
             if(q_out[0] == 1)
                 state_next = add;
             else
                 state_next = shift; 
         end
         add: begin
+            $display("ADD");
+            $display("A_OUT: %b", a_out);
+            $display("B_OUT: %b", b_out);
+            $display("Q_OUT: %b", q_out);
+            $display("CARRY_OUT: %b", c_out);
+            $display("F: %b", f);
             a_ctrl = 2'b11;
-            a = f;
+            a = {c_out, f};
             state_next = shift;
         end
         shift: begin
+            $display("SHIFT");
+            $display("A_OUT: %b", a_out);
+            $display("B_OUT: %b", b_out);
+            $display("Q_OUT: %b", q_out);
+            $display("CARRY_OUT: %b", c_out);
+            $display("F: %b", f);
             a_ctrl = 2'b01;
             q_ctrl = 2'b01;
             en_counter = 1;
@@ -130,6 +151,10 @@ always_comb begin
                 state_next = done;
         end
         done: begin
+            $display("DONE");
+            $display("A_OUT: %b", a_out);
+            $display("B_OUT: %b", b_out);
+            $display("Q_OUT: %b", q_out);
             d_end = 1;
             state_next = idle;
         end
@@ -137,5 +162,5 @@ always_comb begin
     endcase
 end
 
-assign result = {a_out, q_out};
+assign result = {a_out[7:0], q_out};
 endmodule
