@@ -7,16 +7,16 @@ module shift_add_multiplier (
     output logic d_end
 );
 
-// Acumulador A
+// Acumulador A (9 bits para captação de carry)
 logic [8:0] a;
 
 // Variáveis para controle do Counter
-logic [3:0] cycle, data_out;
+logic [3:0] data_out;
 logic load_counter, en_counter, c_end, up_down;
 
 // Variáveis para controle dos shift registers A, B e Q
 logic [1:0] a_ctrl, b_ctrl, q_ctrl;
-logic [8:0] a_out;
+logic [8:0] a_out;                      // Acumulador A (9 bits para captação de carry)
 logic [7:0] b_out, q_out;
 logic a_ser_in, a_ser_out, b_ser_in, b_ser_out, q_ser_out;
 
@@ -62,7 +62,7 @@ counter count (
     .rst(rst),
     .load(load_counter),
     .en(en_counter),
-    .up_down(1'b0),
+    .up_down(1'b0),        // Contagem regressiva
     .data_in(4'b0111),
     .data_out(data_out),
     .c_end(c_end)
@@ -71,8 +71,8 @@ counter count (
 ula_8_bits operation (
     .a(a_out[7:0]),
     .b(b_out),
-    .s(4'b0001),
-    .m(1'b0),
+    .s(4'b0001),           // Seletor de operação de soma 'a+b'
+    .m(1'b0),              // Seletor de operação aritmética
     .f(f),
     .c_in(1'b0),
     .a_eq_b(a_eq_b),
@@ -103,44 +103,27 @@ always_comb begin
 
     case(state_reg)
         idle: begin
-            $display("IDLE");
-            $display("A_OUT: %b", a_out);
-            $display("B_OUT: %b", b_out);
-            $display("Q_OUT: %b", q_out);
             a_ctrl = 2'b11;
             b_ctrl = 2'b11;
             q_ctrl = 2'b11;
             load_counter = 1;
             state_next = verify;
         end
+
         verify: begin
-            $display("VERIFY");
-            $display("A_OUT: %b", a_out);
-            $display("B_OUT: %b", b_out);
-            $display("Q_OUT: %b", q_out);
             if(q_out[0] == 1)
                 state_next = add;
             else
                 state_next = shift; 
         end
+
         add: begin
-            $display("ADD");
-            $display("A_OUT: %b", a_out);
-            $display("B_OUT: %b", b_out);
-            $display("Q_OUT: %b", q_out);
-            $display("CARRY_OUT: %b", c_out);
-            $display("F: %b", f);
             a_ctrl = 2'b11;
             a = {c_out, f};
             state_next = shift;
         end
+
         shift: begin
-            $display("SHIFT");
-            $display("A_OUT: %b", a_out);
-            $display("B_OUT: %b", b_out);
-            $display("Q_OUT: %b", q_out);
-            $display("CARRY_OUT: %b", c_out);
-            $display("F: %b", f);
             a_ctrl = 2'b01;
             q_ctrl = 2'b01;
             en_counter = 1;
@@ -150,17 +133,15 @@ always_comb begin
             else
                 state_next = done;
         end
+
         done: begin
-            $display("DONE");
-            $display("A_OUT: %b", a_out);
-            $display("B_OUT: %b", b_out);
-            $display("Q_OUT: %b", q_out);
             d_end = 1;
             state_next = idle;
         end
+
         default: state_next = idle;
     endcase
 end
 
-assign result = {a_out[7:0], q_out};
+assign result = {a_out[7:0], q_out};  // Capta apenas os primeiros 8 bits de A
 endmodule
